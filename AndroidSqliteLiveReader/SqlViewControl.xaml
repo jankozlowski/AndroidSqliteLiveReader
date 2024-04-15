@@ -7,20 +7,49 @@
              Background="{DynamicResource {x:Static vsshell:VsBrushes.WindowKey}}"
              Foreground="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}"
              mc:Ignorable="d"
-             d:DesignHeight="300" d:DesignWidth="300"
-             Name="MyToolWindow">
-    <Grid>
-        <StackPanel VerticalAlignment="Center" Orientation="Vertical">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Width="40"  VerticalAlignment="Center" TextAlignment="Center" Height="30" HorizontalAlignment="Center">Emulator:</TextBlock>
-                <TextBox Width="200" Height="30"></TextBox>
-                <Button Content="Sync" Click="SyncEmulatorClick" Width="60" Height="30" x:Name="syncEmulator"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Width="40" VerticalAlignment="Center" TextAlignment="Center" Height="30" HorizontalAlignment="Center">Path:</TextBlock>
-                <TextBox Width="200" Height="30"></TextBox>
-                <Button Content="Sync" Click="SyncDataClick" Width="60" Height="30" x:Name="syncData"/>
-            </StackPanel>
-        </StackPanel>
+             Name="MyToolWindow" d:DesignHeight="381.844" d:DesignWidth="1139.467">
+
+    <Grid >
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"></RowDefinition>
+            <RowDefinition Height="30"></RowDefinition>
+            <RowDefinition Height="30"></RowDefinition>
+            <RowDefinition Height="30"></RowDefinition>
+            <RowDefinition Height="30"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <TextBlock Padding="10" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" TextAlignment="Center" HorizontalAlignment="Center" Text="Adb path:"></TextBlock>
+        <TextBox Grid.Row="0" Grid.Column="1" x:Name="AdbPath" VerticalContentAlignment="Center" Text="C:\Program Files (x86)\Android\android-sdk\platform-tools\"></TextBox>
+        <Button Grid.Row="0" Grid.Column="2" Content="Check" Click="CheckAdbClick" x:Name="checkSdk"/>
+
+        <TextBlock  Grid.Row="1" Grid.Column="0"  VerticalAlignment="Center" TextAlignment="Center" HorizontalAlignment="Center">Device:</TextBlock>
+        <ComboBox  Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" VerticalContentAlignment="Center" x:Name="DevicesComboBox" DropDownOpened="DevicesComboBox_DropDownOpened">
+            <ComboBox.ItemContainerStyle>
+                <Style TargetType="ComboBoxItem">
+                    <Setter Property="Height" Value="30" />
+                </Style>
+            </ComboBox.ItemContainerStyle>
+        </ComboBox>
+
+        <TextBlock  Grid.Row="2" Grid.Column="0"  VerticalAlignment="Center" TextAlignment="Center"  HorizontalAlignment="Center">Db path:</TextBlock>
+        <TextBox  Grid.Row="2" Grid.Column="1" VerticalContentAlignment="Center" x:Name="dbPathBox" Text="/data/data/com.binaryalchemist.hostilecity/files/.config/HostileCity.db" ></TextBox>
+        <Button Grid.Row="2" Grid.Column="2" Content="Browse" Click="SyncDataClick"  x:Name="syncData"/>
+
+        <Button Grid.Row="3" Grid.ColumnSpan="3" Content="Get data" Click="GetDataClick" x:Name="getData"/>
+        <ComboBox SelectionChanged="TableComboBox_SelectionChanged"  Grid.Row="4" VerticalContentAlignment="Center" Grid.ColumnSpan="3" x:Name="TableComboBox">
+            <ComboBox.ItemContainerStyle>
+                <Style TargetType="ComboBoxItem">
+                    <Setter Property="Height" Value="30" />
+                </Style>
+            </ComboBox.ItemContainerStyle>
+        </ComboBox>
+
+        <DataGrid  Grid.Row="5" Grid.ColumnSpan="3"  x:Name="DatabaseGrid" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible" AutoGenerateColumns="True"></DataGrid>
     </Grid>
 </UserControl>
