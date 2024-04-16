@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
 
 namespace AndroidSqliteLiveReader
 {
@@ -11,8 +12,8 @@ namespace AndroidSqliteLiveReader
         public FilePicker()
         {
             InitializeComponent();
-
-            string directorys = AdbCommandWithResult("-s emulator-5554 shell ls -F -p");
+            //adb root -s emulator-5554
+            string directorys = AdbCommandWithResult("-s emulator-5554 shell ls -F");
 
             string[] lines = directorys.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -25,10 +26,22 @@ namespace AndroidSqliteLiveReader
             {
                 TreeViewItem newNode = new TreeViewItem { Header = CustomizeTreeViewItem(true, line), };
                 currentNode.Items.Add(newNode);
+                newNode.Expanded += CurrentNode_Expanded;
                 newNode.Items.Add(InvisibleItem());
             }
 
             tree.Items.Add(rootNode);
+        }
+
+        private void CurrentNode_Expanded(object sender, RoutedEventArgs e)
+        {
+            string directorys = AdbCommandWithResult("-s emulator-5554 shell ls storage -F");
+            string[] lines = directorys.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string line in lines)
+            {
+                TreeViewItem newNode = new TreeViewItem { Header = CustomizeTreeViewItem(true, line), };
+                ((TreeViewItem)sender).Items.Add(newNode);
+            }
         }
 
         public string AdbCommandWithResult(string command)
