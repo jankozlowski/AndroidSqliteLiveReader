@@ -40,40 +40,8 @@ namespace AndroidSqliteLiveReader
         [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1300:ElementMustBeginWithUpperCaseLetter", Justification = "Default event handler naming pattern")]
         private void SyncDataClick(object sender, RoutedEventArgs e)
         {
-            string directorys = AdbCommandWithResult("-s emulator-5554 shell ls -R /");
-
-            string[] lines = directorys.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-
-            TreeView tree = new TreeView();
-            TreeViewItem rootNode = new TreeViewItem { Header = "Linux File System" };
-            TreeViewItem currentNode = rootNode;
-
-            foreach (string line in lines)
-            {
-                if (line.EndsWith(":"))
-                {
-                    // New directory
-                    string dirName = line.TrimEnd(':');
-                    TreeViewItem newNode = new TreeViewItem { Header = dirName };
-                    currentNode.Items.Add(newNode);
-                    currentNode = newNode;
-                }
-                else if (!string.IsNullOrWhiteSpace(line))
-                {
-                    // File
-                    TreeViewItem newNode = new TreeViewItem { Header = Path.GetFileName(line) };
-                    currentNode.Items.Add(newNode);
-                }
-                else if (line == "")
-                {
-                    // End of directory
-                    currentNode = (TreeViewItem)tree.Items[0]; // Set currentNode back to root
-                }
-            }
-
-            // Clear existing items and add the root node to the TreeView
-            tree.Items.Clear();
-            tree.Items.Add(rootNode);
+            FilePicker filePicker = new FilePicker();
+            filePicker.ShowDialog();
 
         }
 
