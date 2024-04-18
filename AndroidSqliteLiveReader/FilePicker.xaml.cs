@@ -1,72 +1,103 @@
 ﻿using AndroidSqliteLiveReader.Helpers;
-using Microsoft.VisualStudio.Package;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-
 namespace AndroidSqliteLiveReader
 {
     public partial class FilePicker : Window
     {
         public string PathResult { get; private set; }
+        private string DeviceId { get; set; }
 
-        public FilePicker()
+        public FilePicker(string deviceId)
         {
             InitializeComponent();
-            AdbHelper.AdbCommand("root -s emulator-5554");
+            DeviceId = deviceId;
+            Initialize();
+        }
 
-            TreeViewItem rootNode = new TreeViewItem { Header = "/" };
-            rootNode.Items.Add(LoadingItem());
-            rootNode.Tag = "/";
+        private void Initialize()
+        {
+            AdbHelper.AdbCommand($"root -s {DeviceId}");
+
+            TreeViewItem rootNode = new TreeViewItem
+            {
+                Header = "/",
+                Tag = "/"
+            };
             LoadNodes(rootNode);
 
             rootNode.IsExpanded = true;
-
             tree.Items.Add(rootNode);
-        }
-
-        private void CurrentNode_Expanded(object sender, RoutedEventArgs e)
-        {
-            LoadNodes((TreeViewItem)sender);
-            ((TreeViewItem)sender).Expanded -= CurrentNode_Expanded;
         }
 
         private void LoadNodes(TreeViewItem currentNode)
         {
-            string directorys = AdbHelper.AdbCommandWithResult($"-s emulator-5554 shell ls {currentNode.Tag} -F -A");
-            string[] lines = directorys.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries).ToArray();
-            string[] folderLines = lines.Where(l => l.EndsWith("/") || l.EndsWith("@")).OrderBy(l => l).ToArray();
-            string[] fileLines = lines.Except(folderLines).OrderBy(l => l).ToArray();
-            lines = folderLines.Concat(fileLines).ToArray();
+            string directorys = AdbHelper.AdbCommandWithResult($"-s {DeviceId} shell ls {currentNode.Tag} -F -A");
+
+            List<SingleNode> singleNodes = directorys.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries).Select(l => new SingleNode() { Name = l, Path = l }).ToList();
+            List<SingleNode> folderNodes = singleNodes.Where(n => n.Name.EndsWith("/")).ToList();
+            List<SingleNode> symbolicNodes = singleNodes.Where(n => n.Name.EndsWith("@")).ToList();
+
+            CheckSymbolicLinks(symbolicNodes);
+
+            List<SingleNode> onlyFolders = folderNodes.Concat(symbolicNodes.Where(s => !s.IsFile)).OrderBy(s => s.Name).ToList();
+            List<SingleNode> onlyFiles = singleNodes.Except(onlyFolders).OrderBy(s => s.Name).ToList();
+            onlyFiles.ForEach(l => { l.IsFile = true; FormatFileNode(l); });
+            singleNodes = onlyFolders.Concat(onlyFiles).ToList();
 
             currentNode.Items.Clear();
 
-            foreach (string line in lines)
+            foreach (SingleNode node in singleNodes)
             {
-                string path = line;
-                string tag = currentNode.Tag + path;
+                AddNewNode(currentNode, node);
+            }
+        }
 
-                if (line.EndsWith("@"))
-                {//>adb.exe shell test -d /system/binio && echo "Directory"
-                    tag = AdbHelper.AdbCommandWithResult($"-s emulator-5554 shell readlink -f -n {tag.Substring(0, tag.Length - 1)}");
-                    try
-                    {
-                        if (bool.Parse(AdbHelper.AdbCommandWithResult($"-s emulator-5554 shell test -d {tag} && echo 'true'")))
-                        {
-                            tag += "/";
-                        }
-                    }
-                    catch { }
+        private void CheckSymbolicLinks(List<SingleNode> symbolicNodes)
+        {
+            foreach (SingleNode symbolicLink in symbolicNodes)
+            {
+                symbolicLink.Name = symbolicLink.Name.Replace("@", "");
+                symbolicLink.Path = AdbHelper.AdbCommandWithResult($"-s {DeviceId} shell readlink -f -n {symbolicLink.Name}");
+                if (bool.TryParse(AdbHelper.AdbCommandWithResult($"-s {DeviceId} shell test -d {symbolicLink.Path} && echo 'true'"), out bool result))
+                {
+                    symbolicLink.Path += "/";
+                    symbolicLink.Name += "/";
+                    continue;
                 }
+                symbolicLink.IsFile = true;
+                FormatFileNode(symbolicLink);
+            }
+        }
 
-                TreeViewItem newNode = new TreeViewItem { Header = CustomizeTreeViewItem(path, tag), Tag = tag };
-                currentNode.Items.Add(newNode);
-                newNode.Expanded += CurrentNode_Expanded;
-                if (line.EndsWith("/") || (line.EndsWith("@") && tag.EndsWith("/")))
-                    newNode.Items.Add(LoadingItem());
+        private void AddNewNode(TreeViewItem currentNode, SingleNode node)
+        {
+            string name = node.Name;
+            node.Path = currentNode.Tag + name;
+
+            TreeViewItem newNode = new TreeViewItem { Header = TreeViewItemLayout(node), Tag = node.Path };
+            currentNode.Items.Add(newNode);
+            newNode.Expanded += CurrentNodeExpanded;
+            if (!node.IsFile)
+                newNode.Items.Add(LoadingItem());
+        }
+
+        private void CurrentNodeExpanded(object sender, RoutedEventArgs e)
+        {
+            LoadNodes((TreeViewItem)sender);
+            ((TreeViewItem)sender).Expanded -= CurrentNodeExpanded;
+        }
+
+        private void FormatFileNode(SingleNode node)
+        {
+            if (node.Name.EndsWith("*"))
+            {
+                node.Name = node.Name.Substring(0, node.Name.Length - 1);
+                node.Path = node.Path.Substring(0, node.Path.Length - 1);
             }
         }
 
@@ -83,47 +114,27 @@ namespace AndroidSqliteLiveReader
             Close();
         }
 
-
-        private StackPanel CustomizeTreeViewItem(string name, string tag)
+        private StackPanel TreeViewItemLayout(SingleNode node)
         {
-            // Add Icon
-            // Create Stack Panel
             StackPanel stkPanel = new StackPanel();
             stkPanel.Orientation = Orientation.Horizontal;
 
-            // Create Image
             Image img = new Image();
-            if (name.EndsWith("/"))
+            if (node.IsFile)
             {
-                img.Source = new BitmapImage(new Uri($"pack://application:,,,/{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name};component/Resources/folder.png"));
-            }
-            else if (name.EndsWith("@"))
-            {
-                if (tag.EndsWith("/"))
-                {
-                    img.Source = new BitmapImage(new Uri($"pack://application:,,,/{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name};component/Resources/folder.png"));
-                    name = name.Substring(0, name.Length - 1) + "/";
-                }
-                else
-                {
-                    img.Source = new BitmapImage(new Uri($"pack://application:,,,/{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name};component/Resources/file.png"));
-                    name = name.Substring(0, name.Length - 1);
-                }
+                img.Source = new BitmapImage(new Uri($"pack://application:,,,/{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name};component/Resources/file.png"));
             }
             else
             {
-                img.Source = new BitmapImage(new Uri($"pack://application:,,,/{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name};component/Resources/file.png"));
-
+                img.Source = new BitmapImage(new Uri($"pack://application:,,,/{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name};component/Resources/folder.png"));
             }
 
             img.Width = 16;
             img.Height = 16;
 
-            // Create TextBlock
             TextBlock lbl = new TextBlock();
-            lbl.Text = name;
+            lbl.Text = node.Name;
 
-            // Add to stack
             stkPanel.Children.Add(img);
             stkPanel.Children.Add(lbl);
 
@@ -132,22 +143,22 @@ namespace AndroidSqliteLiveReader
 
         private StackPanel LoadingItem()
         {
-            // Add Icon
-            // Create Stack Panel
             StackPanel stkPanel = new StackPanel();
             stkPanel.Orientation = Orientation.Horizontal;
 
-
-            // Create TextBlock
             TextBlock lbl = new TextBlock();
             lbl.Text = "Loading...";
 
-            // Add to stack
             stkPanel.Children.Add(lbl);
 
             return stkPanel;
         }
 
-
+        private class SingleNode
+        {
+            public string Name { get; set; }
+            public string Path { get; set; }
+            public bool IsFile { get; set; }
+        }
     }
 }

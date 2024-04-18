@@ -31,9 +31,16 @@ namespace AndroidSqliteLiveReader
         /// <param name="e">The event args.</param>
         [SuppressMessage("Microsoft.Globalization", "CA1300:SpecifyMessageBoxOptions", Justification = "Sample code")]
         [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1300:ElementMustBeginWithUpperCaseLetter", Justification = "Default event handler naming pattern")]
-        private void SyncDataClick(object sender, RoutedEventArgs e)
+        private void BrowseClick(object sender, RoutedEventArgs e)
         {
-            FilePicker filePicker = new FilePicker();
+            Device selectedDevice = _devices.Where(d => d.Name.Equals(DevicesComboBox.Text)).FirstOrDefault();
+            if (selectedDevice == null)
+            {
+                MessageBox.Show(string.Format(System.Globalization.CultureInfo.CurrentUICulture, "No device have been selected, select device from device ComboBox. If ComboBox is empty run emulator or connect real device."), "No device selected");
+                return;
+            }
+
+            FilePicker filePicker = new FilePicker(selectedDevice.Id);
 
             bool? result = filePicker.ShowDialog();
 
@@ -93,8 +100,8 @@ namespace AndroidSqliteLiveReader
 
         private void DevicesComboBox_DropDownOpened(object sender, EventArgs e)
         {
-            List<Device> devices = GetConnectedDevices();
-            DevicesComboBox.ItemsSource = devices.Select(d => d.Name).ToList();
+            _devices = GetConnectedDevices();
+            DevicesComboBox.ItemsSource = _devices.Select(d => d.Name).ToList();
         }
 
         private void CheckAdbClick(object sender, RoutedEventArgs e)
@@ -199,7 +206,7 @@ namespace AndroidSqliteLiveReader
 
         private SqliteConnection _connection;
         private int _lastSelectedTableIndex = -1; // add db path changed listener
-
+        private List<Device> _devices = new List<Device>();
 
 
         public class Device

@@ -41,7 +41,7 @@
 
         <TextBlock  Grid.Row="2" Grid.Column="0"  VerticalAlignment="Center" TextAlignment="Center"  HorizontalAlignment="Center">Db path:</TextBlock>
         <TextBox  Grid.Row="2" Grid.Column="1" VerticalContentAlignment="Center" x:Name="dbPathBox" Text="/data/data/com.binaryalchemist.hostilecity/files/.config/HostileCity.db" ></TextBox>
-        <Button Grid.Row="2" Grid.Column="2" Content="Browse" Click="SyncDataClick"  x:Name="syncData"/>
+        <Button Grid.Row="2" Grid.Column="2" Content="Browse" Click="BrowseClick"  x:Name="browseData"/>
 
         <Button Grid.Row="3" Grid.ColumnSpan="3" Content="Get data" Click="GetDataClick" x:Name="getData"/>
         <ComboBox SelectionChanged="TableComboBox_SelectionChanged"  Grid.Row="4" VerticalContentAlignment="Center" Grid.ColumnSpan="3" x:Name="TableComboBox">

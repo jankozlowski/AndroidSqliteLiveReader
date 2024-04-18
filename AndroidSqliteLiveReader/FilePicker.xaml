@@ -2,19 +2,26 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="AndroidSqliteLiveReader.FilePicker"
-        Title="File Picker" Height="600" Width="1024">
+        WindowStartupLocation="CenterScreen"
+        Title="File Picker" 
+        Height="800" Width="1024">
 
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"></RowDefinition>
-            <RowDefinition Height="30"></RowDefinition>
+            <RowDefinition Height="50"></RowDefinition>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"></ColumnDefinition>
             <ColumnDefinition Width="*"></ColumnDefinition>
+            <ColumnDefinition Width="*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
-        <TreeView Grid.Row="0" Grid.ColumnSpan="2" x:Name="tree"></TreeView>
-        <Button Grid.Row="1" Grid.Column="0" Content="Cancel" Width="100" Height="30" HorizontalAlignment="Center" VerticalAlignment="Center" Click="CancelClicked"/>
-        <Button Grid.Row="1" Grid.Column="1" Content="Select" Width="100" Height="30" HorizontalAlignment="Center" VerticalAlignment="Center" Click="SelectClicked"/>
+        <TreeView Grid.Row="0" Grid.ColumnSpan="3" x:Name="tree"></TreeView>
+        <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Select" Width="100" Height="25"  VerticalAlignment="Center" Click="SelectClicked"/>
+            <Viewbox Width="15"></Viewbox>
+            <Button Content="Cancel" Width="100" Height="25"  VerticalAlignment="Center" Click="CancelClicked"/>
+            <Viewbox Width="25"></Viewbox>
+        </StackPanel>
     </Grid>
 </Window>
