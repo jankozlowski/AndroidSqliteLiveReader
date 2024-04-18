@@ -1,20 +1,13 @@
-﻿using EnvDTE;
+﻿using AndroidSqliteLiveReader.Helpers;
 using Microsoft.Data.Sqlite;
-using Microsoft.VisualStudio.Setup.Configuration;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.TextManager.Interop;
-using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Markup;
 
 namespace AndroidSqliteLiveReader
 {
@@ -41,7 +34,13 @@ namespace AndroidSqliteLiveReader
         private void SyncDataClick(object sender, RoutedEventArgs e)
         {
             FilePicker filePicker = new FilePicker();
-            filePicker.ShowDialog();
+
+            bool? result = filePicker.ShowDialog();
+
+            if (result.HasValue && result.Value)
+            {
+                dbPathBox.Text = filePicker.PathResult;
+            }
 
         }
 
@@ -49,7 +48,7 @@ namespace AndroidSqliteLiveReader
         {
             List<Device> devices = new List<Device>();
 
-            string devicesAdbResult = AdbCommandWithResult("devices -l");
+            string devicesAdbResult = AdbHelper.AdbCommandWithResult("devices -l");
 
             string[] lineResult = SplitByLine(devicesAdbResult);
 
@@ -68,7 +67,7 @@ namespace AndroidSqliteLiveReader
 
             foreach (Device device in devices)
             {
-                string properties = AdbCommandWithResult($"-s {device.Id} shell getprop");
+                string properties = AdbHelper.AdbCommandWithResult($"-s {device.Id} shell getprop");
                 string[] propertieslines = SplitByLine(properties);
                 string avdNameLine = propertieslines.Where(l => l.Contains("ro.boot.qemu.avd_name")).FirstOrDefault();
                 string avdName = avdNameLine.Split(':')[1];
@@ -100,7 +99,6 @@ namespace AndroidSqliteLiveReader
 
         private void CheckAdbClick(object sender, RoutedEventArgs e)
         {
-
             string adbPath = Path.Combine(AdbPath.Text, "adb.exe");
             bool adbExists = File.Exists(adbPath);
             if (adbExists)
@@ -119,10 +117,10 @@ namespace AndroidSqliteLiveReader
 
             string fileName = path.Substring(path.LastIndexOf("/") + 1);
 
-            AdbCommand($"-s emulator-5554 shell \"su 0 mkdir /storage/emulated/0/DbCopyPathTemp\"");// make Directory
-            AdbCommand($"-s emulator-5554 shell \"su 0 cp -F {path} /storage/emulated/0/DbCopyPathTemp/\""); //copy Db to readable folder
-            AdbCommand($"-s emulator-5554 pull /storage/emulated/0/DbCopyPathTemp/HostileCity.db {Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}"); // copy db to disc
-            AdbCommand($"-s emulator-5554 shell \"su 0 rm -r /storage/emulated/0/DbCopyPathTemp\"");// delete Directory
+            AdbHelper.AdbCommand($"-s emulator-5554 shell \"su 0 mkdir /storage/emulated/0/DbCopyPathTemp\"");// make Directory
+            AdbHelper.AdbCommand($"-s emulator-5554 shell \"su 0 cp -F {path} /storage/emulated/0/DbCopyPathTemp/\""); //copy Db to readable folder
+            AdbHelper.AdbCommand($"-s emulator-5554 pull /storage/emulated/0/DbCopyPathTemp/HostileCity.db {Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}"); // copy db to disc
+            AdbHelper.AdbCommand($"-s emulator-5554 shell \"su 0 rm -r /storage/emulated/0/DbCopyPathTemp\"");// delete Directory
 
             string currentPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), fileName);
             _connection = new SqliteConnection($"data source={Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), fileName)}");
@@ -202,46 +200,7 @@ namespace AndroidSqliteLiveReader
         private SqliteConnection _connection;
         private int _lastSelectedTableIndex = -1; // add db path changed listener
 
-        public void AdbCommand(string command)
-        {
-            using (System.Diagnostics.Process cmd = new System.Diagnostics.Process())
-            {
-                cmd.StartInfo.FileName = @"C:\Program Files (x86)\Android\android-sdk\platform-tools\adb.exe";
-                cmd.StartInfo.Arguments = command;
-                cmd.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                cmd.StartInfo.CreateNoWindow = true;
-                cmd.StartInfo.UseShellExecute = false;
 
-                cmd.StartInfo.RedirectStandardOutput = true;
-                cmd.StartInfo.RedirectStandardError = true;
-
-                cmd.Start();
-                string stdout = cmd.StandardOutput.ReadToEnd();
-                string stderr = cmd.StandardError.ReadToEnd();
-                cmd.WaitForExit();
-            }
-        }
-
-        public string AdbCommandWithResult(string command)
-        {
-            string output = string.Empty;
-
-            using (System.Diagnostics.Process cmd = new System.Diagnostics.Process())
-            {
-                cmd.StartInfo.FileName = @"C:\Program Files (x86)\Android\android-sdk\platform-tools\adb.exe";
-                cmd.StartInfo.Arguments = command;
-                cmd.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                cmd.StartInfo.CreateNoWindow = true;
-                cmd.StartInfo.UseShellExecute = false;
-                cmd.StartInfo.RedirectStandardOutput = true;
-
-                cmd.Start();
-                output = cmd.StandardOutput.ReadToEnd();
-                cmd.WaitForExit();
-            }
-
-            return output;
-        }
 
         public class Device
         {
