@@ -1,9 +1,13 @@
 ﻿using AndroidSqliteLiveReader.Helpers;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.VSHelp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 namespace AndroidSqliteLiveReader
 {
@@ -81,9 +85,11 @@ namespace AndroidSqliteLiveReader
 
             TreeViewItem newNode = new TreeViewItem { Header = TreeViewItemLayout(node), Tag = node.Path };
             currentNode.Items.Add(newNode);
-            newNode.Expanded += CurrentNodeExpanded;
             if (!node.IsFile)
+            {
+                newNode.Expanded += CurrentNodeExpanded;
                 newNode.Items.Add(LoadingItem());
+            }
         }
 
         private void CurrentNodeExpanded(object sender, RoutedEventArgs e)
@@ -119,14 +125,34 @@ namespace AndroidSqliteLiveReader
             StackPanel stkPanel = new StackPanel();
             stkPanel.Orientation = Orientation.Horizontal;
 
+
+            SolidColorBrush systemColor = (SolidColorBrush)FindResource(VsBrushes.WindowTextKey);
+            string hash = systemColor.Color.ToString();
+            bool darkTheme = systemColor.Color.ToString().Equals("#FFFAFAFA");
+
+
             Image img = new Image();
             if (node.IsFile)
             {
-                img.Source = new BitmapImage(new Uri($"pack://application:,,,/{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name};component/Resources/file.png"));
+                if (!darkTheme)
+                {
+                    img.Source = new BitmapImage(new Uri($"pack://application:,,,/{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name};component/Resources/fileblack.png"));
+                }
+                else
+                {
+                    img.Source = new BitmapImage(new Uri($"pack://application:,,,/{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name};component/Resources/filewhite.png"));
+                }
             }
             else
             {
-                img.Source = new BitmapImage(new Uri($"pack://application:,,,/{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name};component/Resources/folder.png"));
+                if (!darkTheme)
+                {
+                    img.Source = new BitmapImage(new Uri($"pack://application:,,,/{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name};component/Resources/folderblack.png"));
+                }
+                else
+                {
+                    img.Source = new BitmapImage(new Uri($"pack://application:,,,/{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name};component/Resources/folderwhite.png"));
+                }
             }
 
             img.Width = 16;
@@ -134,6 +160,11 @@ namespace AndroidSqliteLiveReader
 
             TextBlock lbl = new TextBlock();
             lbl.Text = node.Name;
+
+
+
+            lbl.Foreground = (SolidColorBrush)FindResource(VsBrushes.WindowTextKey);
+            lbl.Background = (SolidColorBrush)FindResource(VsBrushes.WindowKey);
 
             stkPanel.Children.Add(img);
             stkPanel.Children.Add(lbl);

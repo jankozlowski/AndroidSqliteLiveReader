@@ -1,10 +1,13 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vsshell="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0"
         x:Class="AndroidSqliteLiveReader.FilePicker"
         WindowStartupLocation="CenterScreen"
         Title="File Picker" 
-        Height="800" Width="1024">
+        Height="800" Width="1024"
+        Background="{DynamicResource {x:Static vsshell:VsBrushes.WindowKey}}"
+        Foreground="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -16,11 +19,11 @@
             <ColumnDefinition Width="*"></ColumnDefinition>
             <ColumnDefinition Width="*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
-        <TreeView Grid.Row="0" Grid.ColumnSpan="3" x:Name="tree"></TreeView>
+        <TreeView Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ThemedDialogTreeViewStyleKey}}" Grid.Row="0" Grid.ColumnSpan="3" x:Name="tree"></TreeView>
         <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="Select" Width="100" Height="25"  VerticalAlignment="Center" Click="SelectClicked"/>
+            <Button Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Content="Select" Width="100" Height="25"  VerticalAlignment="Center" Click="SelectClicked"/>
             <Viewbox Width="15"></Viewbox>
-            <Button Content="Cancel" Width="100" Height="25"  VerticalAlignment="Center" Click="CancelClicked"/>
+            <Button Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Content="Cancel" Width="100" Height="25"  VerticalAlignment="Center" Click="CancelClicked"/>
             <Viewbox Width="25"></Viewbox>
         </StackPanel>
     </Grid>

@@ -101,8 +101,10 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Resources\file.png" />
-    <Resource Include="Resources\folder.png" />
+    <Resource Include="Resources\fileblack.png" />
+    <Resource Include="Resources\folderblack.png" />
+    <Resource Include="Resources\filewhite.png" />
+    <Resource Include="Resources\folderwhite.png" />
     <Content Include="runtimes\win-arm\native\e_sqlite3.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
