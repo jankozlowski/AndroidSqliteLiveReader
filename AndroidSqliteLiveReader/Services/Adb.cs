@@ -2,13 +2,13 @@
 using System.IO;
 using System.Windows;
 
-namespace AndroidSqliteLiveReader.Helpers
+namespace AndroidSqliteLiveReader.Services
 {
-    public static class AdbHelper
+    public class Adb
     {
         public static string AdbPath = string.Empty;
 
-        public static void AdbCommand(string command)
+        public void AdbCommand(string command)
         {
             if (!CheckAdbPath())
                 return;
@@ -26,7 +26,7 @@ namespace AndroidSqliteLiveReader.Helpers
             }
         }
 
-        public static string AdbCommandWithResult(string command)
+        public string AdbCommandWithResult(string command)
         {
             if (!CheckAdbPath())
                 return string.Empty;
@@ -50,12 +50,12 @@ namespace AndroidSqliteLiveReader.Helpers
             return output;
         }
 
-        private static string AdbExePath()
+        private string AdbExePath()
         {
             return Path.Combine(AdbPath, "adb.exe");
         }
 
-        private static bool CheckAdbPath()
+        private bool CheckAdbPath()
         {
             bool adbExists = File.Exists(AdbExePath());
             if (adbExists)

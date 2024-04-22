@@ -4,12 +4,10 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:vsshell="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0"
-
-            Background="{DynamicResource {x:Static vsshell:VsBrushes.WindowKey}}"
+             Background="{DynamicResource {x:Static vsshell:VsBrushes.WindowKey}}"
              Foreground="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}"
              mc:Ignorable="d"
-             Name="MyToolWindow" d:DesignHeight="381.844" d:DesignWidth="1139.467">
-
+             Name="MyToolWindow" d:DesignHeight="400" d:DesignWidth="1200">
 
     <Grid >
         <Grid.ColumnDefinitions>
@@ -18,21 +16,21 @@
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="30"></RowDefinition>
-            <RowDefinition Height="30"></RowDefinition>
-            <RowDefinition Height="30"></RowDefinition>
+            <RowDefinition x:Name="row1" Height="30"></RowDefinition>
+            <RowDefinition x:Name="row2" Height="30"></RowDefinition>
+            <RowDefinition x:Name="row3" Height="30"></RowDefinition>
+            <RowDefinition x:Name="row4" Height="30"></RowDefinition>
             <RowDefinition Height="30"></RowDefinition>
             <RowDefinition Height="30"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
         </Grid.RowDefinitions>
 
-        <TextBlock Padding="10" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" TextAlignment="Center" HorizontalAlignment="Center" Text="Adb path:"></TextBlock>
-        <TextBox Style="{DynamicResource {x:Static vsshell:VsResourceKeys.TextBoxStyleKey}}" Grid.Row="0" Grid.Column="1" x:Name="AdbPath" VerticalContentAlignment="Center" Text="C:\Program Files (x86)\Android\android-sdk\platform-tools\" TextChanged="AdbPathTextChanged"></TextBox>
-        <Button Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Grid.Row="0" Grid.Column="2" Content="Check" Click="CheckAdbClick" x:Name="checkSdk"/>
+        <TextBlock x:Name="labelAdbPath" Padding="10" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" TextAlignment="Center" HorizontalAlignment="Center" Text="Adb path:"></TextBlock>
+        <TextBox x:Name="AdbPathBox" Style="{DynamicResource {x:Static vsshell:VsResourceKeys.TextBoxStyleKey}}" Grid.Row="0" Grid.Column="1"  VerticalContentAlignment="Center" Text="C:\Program Files (x86)\Android\android-sdk\platform-tools\" TextChanged="AdbPathTextChanged"></TextBox>
+        <Button x:Name="checkSdk" Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Grid.Row="0" Grid.Column="2" Content="Check" Click="CheckAdbClick" />
 
-
-        <TextBlock  Grid.Row="1" Grid.Column="0"  VerticalAlignment="Center" TextAlignment="Center" HorizontalAlignment="Center">Device:</TextBlock>
-        <ComboBox Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ComboBoxStyleKey}}" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" VerticalContentAlignment="Center" x:Name="DevicesComboBox" DropDownOpened="DevicesComboBox_DropDownOpened">
+        <TextBlock x:Name="labelDevice" Grid.Row="1" Grid.Column="0"  VerticalAlignment="Center" TextAlignment="Center" HorizontalAlignment="Center">Device:</TextBlock>
+        <ComboBox x:Name="DevicesComboBox" Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ComboBoxStyleKey}}" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" VerticalContentAlignment="Center" DropDownOpened="DevicesComboBoxDropDownOpened">
             <ComboBox.ItemContainerStyle>
                 <Style TargetType="ComboBoxItem">
                     <Setter Property="Height" Value="30" />
@@ -40,12 +38,18 @@
             </ComboBox.ItemContainerStyle>
         </ComboBox>
 
-        <TextBlock  Grid.Row="2" Grid.Column="0"  VerticalAlignment="Center" TextAlignment="Center"  HorizontalAlignment="Center">Db path:</TextBlock>
-        <TextBox Style="{DynamicResource {x:Static vsshell:VsResourceKeys.TextBoxStyleKey}}" Grid.Row="2" Grid.Column="1" VerticalContentAlignment="Center" x:Name="dbPathBox" Text="/data/data/com.binaryalchemist.hostilecity/files/.config/HostileCity.db" TextChanged="DbPathTextChanged" ></TextBox>
-        <Button Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Grid.Row="2" Grid.Column="2" Content="Browse" Click="BrowseClick"  x:Name="browseData"/>
+        <TextBlock x:Name="labelDbPath" Grid.Row="2" Grid.Column="0"  VerticalAlignment="Center" TextAlignment="Center"  HorizontalAlignment="Center">Db path:</TextBlock>
+        <TextBox x:Name="dbPathBox" Style="{DynamicResource {x:Static vsshell:VsResourceKeys.TextBoxStyleKey}}" Grid.Row="2" Grid.Column="1" VerticalContentAlignment="Center" Text="" TextChanged="DbPathTextChanged" ></TextBox>
+        <Button x:Name="browseData" Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Grid.Row="2" Grid.Column="2" Content="Browse" Click="BrowseClick"  />
 
-        <Button Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Grid.Row="3" Grid.ColumnSpan="3" Content="Get data" Click="GetDataClick" x:Name="getData"/>
-        <ComboBox Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ComboBoxStyleKey}}" SelectionChanged="TableComboBox_SelectionChanged"  Grid.Row="4" VerticalContentAlignment="Center" Grid.ColumnSpan="3" x:Name="TableComboBox">
+        <TextBlock x:Name="labelSql" Grid.Row="3" Grid.Column="0"  VerticalAlignment="Center" TextAlignment="Center"  HorizontalAlignment="Center">Custom sql:</TextBlock>
+        <TextBox x:Name="sqlBox" Style="{DynamicResource {x:Static vsshell:VsResourceKeys.TextBoxStyleKey}}" Grid.Row="3" Grid.Column="1" VerticalContentAlignment="Center" Text="" ></TextBox>
+        <Button x:Name="executeSql" Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Grid.Row="3" Grid.Column="2" Content="Execute" Click="ExecuteSqlClick"  />
+
+        <Button Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Grid.Row="4" Grid.ColumnSpan="2" Content="Get data" Click="GetDataClick" x:Name="getData"/>
+        <Button Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Grid.Row="4" Grid.Column="2" Content="Settings" Click="SettingsToogleClick" x:Name="settings" Padding="5,0,5,0" />
+
+        <ComboBox Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ComboBoxStyleKey}}" SelectionChanged="TableComboBoxSelectionChanged"  Grid.Row="5" VerticalContentAlignment="Center" Grid.ColumnSpan="3" x:Name="TableComboBox">
             <ComboBox.ItemContainerStyle>
                 <Style TargetType="ComboBoxItem">
                     <Setter Property="Height" Value="30" />
@@ -53,7 +57,7 @@
             </ComboBox.ItemContainerStyle>
         </ComboBox>
 
-        <DataGrid Background="{DynamicResource {x:Static vsshell:VsBrushes.WindowKey}}" BorderBrush="DimGray"  HorizontalGridLinesBrush="DimGray" VerticalGridLinesBrush="DimGray" Grid.Row="5" Grid.ColumnSpan="3" x:Name="DatabaseGrid" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible" AutoGenerateColumns="True" HeadersVisibility="Column" >
+        <DataGrid Background="{DynamicResource {x:Static vsshell:VsBrushes.WindowKey}}" BorderBrush="DimGray"  HorizontalGridLinesBrush="DimGray" VerticalGridLinesBrush="DimGray" Grid.Row="6" Grid.ColumnSpan="3" x:Name="DatabaseGrid" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible" AutoGenerateColumns="True" HeadersVisibility="Column" CanUserDeleteRows="False" CanUserAddRows="False"  >
             <DataGrid.CellStyle>
                 <Style TargetType="{x:Type DataGridCell}">
                     <Setter Property="Background" Value="{DynamicResource {x:Static vsshell:VsBrushes.WindowKey}}" />
@@ -71,6 +75,16 @@
                     <Setter Property="Background" Value="{DynamicResource {x:Static vsshell:VsBrushes.WindowKey}}" />
                     <Setter Property="Foreground" Value="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}" />
                     <Setter Property="BorderBrush" Value="DimGray" />
+                    <Setter Property="Padding" Value="0,5,20,5"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type DataGridColumnHeader}">
+                                <Border Padding="{TemplateBinding Padding}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                    <ContentPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
                     <Style.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" Value="{DynamicResource {x:Static vsshell:VsBrushes.ToolWindowTabMouseOverBorderKey}}" />
@@ -85,8 +99,6 @@
                     <Setter Property="Foreground" Value="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}" />
                 </Style>
             </DataGrid.RowStyle>
-
-
         </DataGrid>
     </Grid>
 </UserControl>

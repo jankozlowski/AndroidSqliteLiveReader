@@ -1,7 +1,5 @@
-﻿using AndroidSqliteLiveReader.Helpers;
+﻿using AndroidSqliteLiveReader.Services;
 using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.VSHelp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,16 +14,19 @@ namespace AndroidSqliteLiveReader
         public string PathResult { get; private set; }
         private string DeviceId { get; set; }
 
+        private readonly Adb Adb;
+
         public FilePicker(string deviceId)
         {
             InitializeComponent();
+            Adb = new Adb();
             DeviceId = deviceId;
             Initialize();
         }
 
         private void Initialize()
         {
-            AdbHelper.AdbCommand($"root -s {DeviceId}");
+            Adb.AdbCommand($"root -s {DeviceId}");
 
             TreeViewItem rootNode = new TreeViewItem
             {
@@ -40,7 +41,7 @@ namespace AndroidSqliteLiveReader
 
         private void LoadNodes(TreeViewItem currentNode)
         {
-            string directorys = AdbHelper.AdbCommandWithResult($"-s {DeviceId} shell ls {currentNode.Tag} -F -A");
+            string directorys = Adb.AdbCommandWithResult($"-s {DeviceId} shell ls {currentNode.Tag} -F -A");
 
             List<SingleNode> singleNodes = directorys.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries).Select(l => new SingleNode() { Name = l, Path = l }).ToList();
             List<SingleNode> folderNodes = singleNodes.Where(n => n.Name.EndsWith("/")).ToList();
@@ -66,8 +67,8 @@ namespace AndroidSqliteLiveReader
             foreach (SingleNode symbolicLink in symbolicNodes)
             {
                 symbolicLink.Name = symbolicLink.Name.Replace("@", "");
-                symbolicLink.Path = AdbHelper.AdbCommandWithResult($"-s {DeviceId} shell readlink -f -n {symbolicLink.Name}");
-                if (bool.TryParse(AdbHelper.AdbCommandWithResult($"-s {DeviceId} shell test -d {symbolicLink.Path} && echo 'true'"), out bool result))
+                symbolicLink.Path = Adb.AdbCommandWithResult($"-s {DeviceId} shell readlink -f -n {symbolicLink.Name}");
+                if (bool.TryParse(Adb.AdbCommandWithResult($"-s {DeviceId} shell test -d {symbolicLink.Path} && echo 'true'"), out bool result))
                 {
                     symbolicLink.Path += "/";
                     symbolicLink.Name += "/";
@@ -122,14 +123,13 @@ namespace AndroidSqliteLiveReader
 
         private StackPanel TreeViewItemLayout(SingleNode node)
         {
-            StackPanel stkPanel = new StackPanel();
-            stkPanel.Orientation = Orientation.Horizontal;
-
+            StackPanel stkPanel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal
+            };
 
             SolidColorBrush systemColor = (SolidColorBrush)FindResource(VsBrushes.WindowTextKey);
-            string hash = systemColor.Color.ToString();
             bool darkTheme = systemColor.Color.ToString().Equals("#FFFAFAFA");
-
 
             Image img = new Image();
             if (node.IsFile)
@@ -160,9 +160,6 @@ namespace AndroidSqliteLiveReader
 
             TextBlock lbl = new TextBlock();
             lbl.Text = node.Name;
-
-
-
             lbl.Foreground = (SolidColorBrush)FindResource(VsBrushes.WindowTextKey);
             lbl.Background = (SolidColorBrush)FindResource(VsBrushes.WindowKey);
 
@@ -174,11 +171,15 @@ namespace AndroidSqliteLiveReader
 
         private StackPanel LoadingItem()
         {
-            StackPanel stkPanel = new StackPanel();
-            stkPanel.Orientation = Orientation.Horizontal;
+            StackPanel stkPanel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal
+            };
 
-            TextBlock lbl = new TextBlock();
-            lbl.Text = "Loading...";
+            TextBlock lbl = new TextBlock
+            {
+                Text = "Loading..."
+            };
 
             stkPanel.Children.Add(lbl);
 

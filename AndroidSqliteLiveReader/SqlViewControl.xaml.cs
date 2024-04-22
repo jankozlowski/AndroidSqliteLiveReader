@@ -1,12 +1,8 @@
-﻿using AndroidSqliteLiveReader.Helpers;
+﻿using AndroidSqliteLiveReader.Services;
 using Microsoft.Data.Sqlite;
-using Microsoft.VisualStudio.Settings;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -14,71 +10,62 @@ using System.Windows.Controls;
 
 namespace AndroidSqliteLiveReader
 {
-    /// <summary>
-    /// Interaction logic for SqlViewControl.
-    /// </summary>
+
     public partial class SqlViewControl : UserControl
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SqlViewControl"/> class.
-        /// </summary>
+        private readonly Adb Adb;
+        private readonly Settings Settings;
+        private readonly HashSet<string> CretedFilesPaths;
+        private SqliteConnection Connection;
+
+        private List<Device> Devices;
+        private Device SelectedDevice { get { return Devices.Where(d => d.Name.Equals(DevicesComboBox.Text)).FirstOrDefault(); } }
+        private int LastSelectedTableIndex = -1;
+        private bool SettingsVisible { get; set; }
+        public const string SettingsName = "SqlViewSettings";
+
+
         public SqlViewControl()
         {
-            this.InitializeComponent();
-            AdbHelper.AdbPath = AdbPath.Text;
-            Loaded += SqlViewControlLoaded;
-            Unloaded += SqlViewControl_Unloaded;
-        }
+            InitializeComponent();
+            Adb = new Adb();
+            Settings = new Settings();
+            CretedFilesPaths = new HashSet<string>();
 
-        private void SqlViewControl_Unloaded(object sender, RoutedEventArgs e)
-        {
-            SaveSetting("SqlViewSettings", "adbPath", AdbPath.Text);
-            SaveSetting("SqlViewSettings", "dbPath", dbPathBox.Text);
+            Adb.AdbPath = AdbPathBox.Text;
+            Loaded += SqlViewControlLoaded;
+            Unloaded += SqlViewControlUnloaded;
         }
 
         private void SqlViewControlLoaded(object sender, RoutedEventArgs e)
         {
-            _devices = GetConnectedDevices();
-            DevicesComboBox.ItemsSource = _devices.Select(d => d.Name).ToList();
-            if (_devices.Count != 0)
+            Devices = GetConnectedDevices();
+            DevicesComboBox.ItemsSource = Devices.Select(d => d.Name).ToList();
+            if (Devices.Count != 0)
                 DevicesComboBox.SelectedIndex = 0;
-            var sdk = GetSetting("SqlViewSettings", "adbPath");
-            var db = GetSetting("SqlViewSettings", "dbPath");
+
+            var sdk = Settings.GetSetting(SettingsName, "adbPath");
+            var db = Settings.GetSetting(SettingsName, "dbPath");
+            var visibility = Settings.GetSetting(SettingsName, "settingsVisible");
+            bool.TryParse(visibility, out bool result);
+            SettingsVisible = result;
+            SetSettingsVisibility(SettingsVisible);
         }
 
-
-        /// <summary>
-        /// Handles click on the button by displaying a message box.
-        /// </summary>
-        /// <param name="sender">The event sender.</param>
-        /// <param name="e">The event args.</param>
-        [SuppressMessage("Microsoft.Globalization", "CA1300:SpecifyMessageBoxOptions", Justification = "Sample code")]
-        [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1300:ElementMustBeginWithUpperCaseLetter", Justification = "Default event handler naming pattern")]
-        private void BrowseClick(object sender, RoutedEventArgs e)
+        private void SqlViewControlUnloaded(object sender, RoutedEventArgs e)
         {
-            Device selectedDevice = _selectedDevice;
-            if (selectedDevice == null)
-            {
-                MessageBox.Show(string.Format(System.Globalization.CultureInfo.CurrentUICulture, "No device have been selected, select device from device ComboBox. If ComboBox is empty run emulator or connect real device."), "No device selected");
-                return;
-            }
-
-            FilePicker filePicker = new FilePicker(selectedDevice.Id);
-
-            bool? result = filePicker.ShowDialog();
-
-            if (result.HasValue && result.Value)
-            {
-                dbPathBox.Text = filePicker.PathResult;
-            }
-
+            Settings.SaveSetting(SettingsName, "adbPath", AdbPathBox.Text);
+            Settings.SaveSetting(SettingsName, "dbPath", dbPathBox.Text);
+            Settings.SaveSetting(SettingsName, "settingsVisible", SettingsVisible.ToString());
+            CloseConnectionIfOpen();
+            DeleteCreatedFiles();
         }
 
         private List<Device> GetConnectedDevices()
         {
             List<Device> devices = new List<Device>();
 
-            string devicesAdbResult = AdbHelper.AdbCommandWithResult("devices -l");
+            string devicesAdbResult = Adb.AdbCommandWithResult("devices -l");
 
             string[] lineResult = SplitByLine(devicesAdbResult);
 
@@ -97,7 +84,7 @@ namespace AndroidSqliteLiveReader
 
             foreach (Device device in devices)
             {
-                string properties = AdbHelper.AdbCommandWithResult($"-s {device.Id} shell getprop");
+                string properties = Adb.AdbCommandWithResult($"-s {device.Id} shell getprop");
                 string[] propertieslines = SplitByLine(properties);
                 string avdNameLine = propertieslines.Where(l => l.Contains("ro.boot.qemu.avd_name")).FirstOrDefault();
                 string avdName = avdNameLine.Split(':')[1];
@@ -107,29 +94,35 @@ namespace AndroidSqliteLiveReader
                 device.Name = avdName;
             }
 
-
             return devices;
+        }
+
+        private void CloseConnectionIfOpen()
+        {
+            if (Connection != null && Connection.State == ConnectionState.Open)
+                Connection.Close();
+        }
+
+        private void DeleteCreatedFiles()
+        {
+            foreach (string path in CretedFilesPaths)
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
         }
 
         private string[] SplitByLine(string text)
         {
-            string[] lines = text.Split(
-                new string[] { Environment.NewLine },
-                StringSplitOptions.None
-            );
+            string[] lines = text.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
             return lines;
-        }
-
-
-        private void DevicesComboBox_DropDownOpened(object sender, EventArgs e)
-        {
-            _devices = GetConnectedDevices();
-            DevicesComboBox.ItemsSource = _devices.Select(d => d.Name).ToList();
         }
 
         private void CheckAdbClick(object sender, RoutedEventArgs e)
         {
-            string adbPath = Path.Combine(AdbPath.Text, "adb.exe");
+            string adbPath = Path.Combine(AdbPathBox.Text, "adb.exe");
             bool adbExists = File.Exists(adbPath);
             if (adbExists)
             {
@@ -141,131 +134,150 @@ namespace AndroidSqliteLiveReader
             }
         }
 
+        private void DevicesComboBoxDropDownOpened(object sender, EventArgs e)
+        {
+            Devices = GetConnectedDevices();
+            DevicesComboBox.ItemsSource = Devices.Select(d => d.Name).ToList();
+        }
+
+        private void BrowseClick(object sender, RoutedEventArgs e)
+        {
+            Device selectedDevice = SelectedDevice;
+            if (selectedDevice == null)
+            {
+                MessageBox.Show(string.Format(System.Globalization.CultureInfo.CurrentUICulture, "No device have been selected, select device from device ComboBox. If ComboBox is empty run emulator or connect real device."), "No device selected");
+                return;
+            }
+
+            FilePicker filePicker = new FilePicker(selectedDevice.Id);
+            bool? result = filePicker.ShowDialog();
+            if (result.HasValue && result.Value)
+            {
+                dbPathBox.Text = filePicker.PathResult;
+            }
+        }
+
         private void GetDataClick(object sender, RoutedEventArgs e)
         {
-            string path = dbPathBox.Text;
+            string dbPath = dbPathBox.Text;
 
-            if (string.IsNullOrEmpty(path))
+            if (string.IsNullOrEmpty(dbPath))
             {
                 MessageBox.Show(string.Format(System.Globalization.CultureInfo.CurrentUICulture, "No db path provided"), "No db Path");
                 return;
             }
 
-            if (!bool.TryParse(AdbHelper.AdbCommandWithResult($"-s {_selectedDevice.Id} shell test -f {path} && echo 'true'"), out bool result))
+            if (!bool.TryParse(Adb.AdbCommandWithResult($"-s {SelectedDevice.Id} shell test -f {dbPath} && echo 'true'"), out bool result))
             {
                 MessageBox.Show(string.Format(System.Globalization.CultureInfo.CurrentUICulture, "Db file not found, are you sure that provided db path is correct and you have selected correct device?"), "Db file not found");
                 return;
             }
 
-
             try
             {
-                string fileName = path.Substring(path.LastIndexOf("/") + 1);
-
-                AdbHelper.AdbCommand($"-s {_selectedDevice.Id} shell \"su 0 mkdir /storage/emulated/0/DbCopyPathTemp\"");// make Directory
-                AdbHelper.AdbCommand($"-s {_selectedDevice.Id} shell \"su 0 cp -F {path} /storage/emulated/0/DbCopyPathTemp/\""); //copy Db to readable folder
-                AdbHelper.AdbCommand($"-s {_selectedDevice.Id} pull /storage/emulated/0/DbCopyPathTemp/HostileCity.db {Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}"); // copy db to disc
-                AdbHelper.AdbCommand($"-s {_selectedDevice.Id} shell \"su 0 rm -r /storage/emulated/0/DbCopyPathTemp\"");// delete Directory
-
-                string currentPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), fileName);
-                _connection = new SqliteConnection($"data source={Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), fileName)}");
-                _connection.Open();
-
-                SqliteCommand sql = new SqliteCommand("SELECT name FROM sqlite_master WHERE type = \"table\"", _connection);
-
-                List<string> tables = new List<string>();
-
-                SqliteDataReader query = sql.ExecuteReader();
-
-                while (query.Read())
-                {
-                    tables.Add(query.GetString(0));
-                }
-
+                CopyFileFromDeviceToApplicationData(dbPath);
+                OpenConnectionToDb(dbPath.Substring(dbPath.LastIndexOf("/") + 1));
                 TableComboBox.SelectedIndex = -1;
-                TableComboBox.ItemsSource = tables;
-                TableComboBox.SelectedIndex = _lastSelectedTableIndex == -1 ? 0 : _lastSelectedTableIndex;
+                TableComboBox.ItemsSource = GetDbTables();
+                TableComboBox.SelectedIndex = LastSelectedTableIndex == -1 ? 0 : LastSelectedTableIndex;
             }
             catch (Exception ex)
             {
                 MessageBox.Show(string.Format(System.Globalization.CultureInfo.CurrentUICulture, ex.Message), "Error");
-
             }
         }
 
-        private void TableComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void CopyFileFromDeviceToApplicationData(string dbPath)
         {
+            string fileName = dbPath.Substring(dbPath.LastIndexOf("/") + 1);
+            Adb.AdbCommand($"-s {SelectedDevice.Id} shell \"su 0 mkdir /storage/emulated/0/DbCopyPathTemp\"");// make Directory
+            Adb.AdbCommand($"-s {SelectedDevice.Id} shell \"su 0 cp -F {dbPath} /storage/emulated/0/DbCopyPathTemp/\""); //copy Db to readable folder
+            Adb.AdbCommand($"-s {SelectedDevice.Id} pull /storage/emulated/0/DbCopyPathTemp/{fileName} {Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}"); // copy db to disc
+            Adb.AdbCommand($"-s {SelectedDevice.Id} shell \"su 0 rm -r /storage/emulated/0/DbCopyPathTemp\"");// delete Directory
+        }
 
-            if (((ComboBox)e.Source).SelectedIndex == -1)
-                return;
+        private void OpenConnectionToDb(string fileName)
+        {
+            string currentPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), fileName);
+            CretedFilesPaths.Add(currentPath);
+            Connection = new SqliteConnection($"data source={Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), fileName)}");
+            Connection.Open();
+        }
 
-            SqliteCommand sql = new SqliteCommand($"PRAGMA table_info({((ComboBox)e.Source).SelectedItem})", _connection);
-            SqliteDataReader query = sql.ExecuteReader();
-            List<string> colums = new List<string>();
+        private List<string> GetDbTables()
+        {
+            List<string> reuslt = new List<string>();
+
+            SqliteCommand sqlCommand = new SqliteCommand("SELECT name FROM sqlite_master WHERE type = 'table'", Connection);
+            SqliteDataReader query = sqlCommand.ExecuteReader();
+
             while (query.Read())
             {
-                colums.Add(query.GetString(1)); //table name
+                reuslt.Add(query.GetString(0));
             }
 
-
-
-
-            SqliteCommand sql2 = new SqliteCommand($"Select * from {((ComboBox)e.Source).SelectedItem}", _connection);
-            SqliteDataReader query2 = sql2.ExecuteReader();
-            List<string> data = new List<string>();
-            while (query2.Read())
-            {
-                for (int i = 0; i < colums.Count; i++)
-                {
-                    if (query2.IsDBNull(i))
-                        data.Add("NULL");
-                    else
-                        data.Add(query2.GetString(i));
-                }
-            }
-
-            DataTable Data = new DataTable();
-
-            foreach (string column in colums)
-            {
-                Data.Columns.Add(column);
-            }
-
-            List<object> oneRow = new List<object>();
-            foreach (string cell in data)
-            {
-                oneRow.Add(cell);
-                if (oneRow.Count == colums.Count())
-                {
-                    Data.Rows.Add(oneRow.ToArray());
-                    oneRow.Clear();
-                }
-            }
-
-
-            DatabaseGrid.ItemsSource = Data.DefaultView;
-            _lastSelectedTableIndex = ((ComboBox)e.Source).SelectedIndex;
-
+            return reuslt;
         }
 
-        private SqliteConnection _connection;
-        private int _lastSelectedTableIndex = -1;
-        private List<Device> _devices = new List<Device>();
-        private Device _selectedDevice { get { return _devices.Where(d => d.Name.Equals(DevicesComboBox.Text)).FirstOrDefault(); } }
-
-
-        public class Device
+        private void ExecuteSqlClick(object sender, RoutedEventArgs e)
         {
-            public string Id { get; set; }
-            public string Name { get; set; }
+            try
+            {
+                if (Connection == null || Connection.State != ConnectionState.Open)
+                {
+                    MessageBox.Show(string.Format(System.Globalization.CultureInfo.CurrentUICulture, "Db Connection is not open, synchronize data first by clicking Get Data"), "Connection not open");
+                    return;
+                }
+
+                SqliteCommand sql = new SqliteCommand(sqlBox.Text, Connection);
+                LoadTableData(sql);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(string.Format(System.Globalization.CultureInfo.CurrentUICulture, ex.Message), "Error");
+            }
+        }
+
+        private void LoadTableData(SqliteCommand sql)
+        {
+            DataTable dataTable = new DataTable();
+            using (SqliteDataReader sqlDataReader = sql.ExecuteReader())
+            {
+                dataTable.Load(sqlDataReader);
+                sqlDataReader.Close();
+            }
+            DatabaseGrid.ItemsSource = dataTable.DefaultView;
+        }
+
+        private void SettingsToogleClick(object sender, RoutedEventArgs e)
+        {
+            SettingsVisible = !SettingsVisible;
+            SetSettingsVisibility(SettingsVisible);
+        }
+
+        private void SetSettingsVisibility(bool visible)
+        {
+            if (!visible)
+            {
+                row1.Height = new GridLength(0);
+                row2.Height = new GridLength(0);
+                row3.Height = new GridLength(0);
+            }
+
+            if (visible)
+            {
+                row1.Height = new GridLength(30);
+                row2.Height = new GridLength(30);
+                row3.Height = new GridLength(30);
+            }
         }
 
         private void AdbPathTextChanged(object sender, TextChangedEventArgs e)
         {
-            AdbHelper.AdbPath = ((TextBox)e.Source).Text;
-
-            if (DevicesComboBox == null)
+            if (Adb == null)
                 return;
+
+            Adb.AdbPath = ((TextBox)e.Source).Text;
 
             dbPathBox.Text = string.Empty;
             DevicesComboBox.SelectedIndex = -1;
@@ -282,39 +294,25 @@ namespace AndroidSqliteLiveReader
 
             TableComboBox.Items.Clear();
             DatabaseGrid.Items.Clear();
+            CloseConnectionIfOpen();
         }
 
-        public WritableSettingsStore GetWritableSettingsStore()
+        private void TableComboBoxSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ServiceProvider serviceProvider = ServiceProvider.GlobalProvider;
-            var settingsManager = serviceProvider.GetService(typeof(SVsSettingsManager)) as IVsSettingsManager;
-            if (settingsManager != null)
-            {
-                IVsWritableSettingsStore writableSettingsStore;
-                settingsManager.GetWritableSettingsStore((uint)__VsSettingsScope.SettingsScope_UserSettings, out writableSettingsStore);
-                return writableSettingsStore as WritableSettingsStore;
-            }
-            return null;
+            if (((ComboBox)e.Source).SelectedIndex == -1)
+                return;
+
+            SqliteCommand sql = new SqliteCommand($"Select * from {((ComboBox)e.Source).SelectedItem}", Connection);
+            LoadTableData(sql);
+
+            LastSelectedTableIndex = ((ComboBox)e.Source).SelectedIndex;
         }
 
-        public void SaveSetting(string collectionPath, string propertyName, string value)
-        {
-            WritableSettingsStore writableSettingsStore = GetWritableSettingsStore();
-            if (writableSettingsStore != null)
-            {
-                writableSettingsStore.CreateCollection(collectionPath);
-                writableSettingsStore.SetString(collectionPath, propertyName, value);
-            }
-        }
 
-        public string GetSetting(string collectionPath, string propertyName)
+        private class Device
         {
-            WritableSettingsStore writableSettingsStore = GetWritableSettingsStore();
-            if (writableSettingsStore != null && writableSettingsStore.CollectionExists(collectionPath))
-            {
-                return writableSettingsStore.GetString(collectionPath, propertyName, defaultValue: null);
-            }
-            return null;
+            public string Id { get; set; }
+            public string Name { get; set; }
         }
     }
 }

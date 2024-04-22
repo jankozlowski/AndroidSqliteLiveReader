@@ -49,7 +49,8 @@
     <Compile Include="FilePicker.xaml.cs">
       <DependentUpon>FilePicker.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Helpers\AdbHelper.cs" />
+    <Compile Include="Services\Adb.cs" />
+    <Compile Include="Services\Settings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AndroidSqliteLiveReaderPackage.cs" />
     <Compile Include="SqlView.cs" />
@@ -96,15 +97,13 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Styles.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\fileblack.png" />
     <Resource Include="Resources\folderblack.png" />
     <Resource Include="Resources\filewhite.png" />
     <Resource Include="Resources\folderwhite.png" />
+    <Content Include="Resources\logo.png" />
     <Content Include="runtimes\win-arm\native\e_sqlite3.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
