@@ -22,6 +22,7 @@
             <RowDefinition x:Name="row4" Height="30"></RowDefinition>
             <RowDefinition Height="30"></RowDefinition>
             <RowDefinition Height="30"></RowDefinition>
+            <RowDefinition Height="30"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
         </Grid.RowDefinitions>
 
@@ -42,14 +43,18 @@
         <TextBox x:Name="dbPathBox" Style="{DynamicResource {x:Static vsshell:VsResourceKeys.TextBoxStyleKey}}" Grid.Row="2" Grid.Column="1" VerticalContentAlignment="Center" Text="" TextChanged="DbPathTextChanged" ></TextBox>
         <Button x:Name="browseData" Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Grid.Row="2" Grid.Column="2" Content="Browse" Click="BrowseClick"  />
 
-        <TextBlock x:Name="labelSql" Grid.Row="3" Grid.Column="0"  VerticalAlignment="Center" TextAlignment="Center"  HorizontalAlignment="Center">Custom sql:</TextBlock>
-        <TextBox x:Name="sqlBox" Style="{DynamicResource {x:Static vsshell:VsResourceKeys.TextBoxStyleKey}}" Grid.Row="3" Grid.Column="1" VerticalContentAlignment="Center" Text="" ></TextBox>
-        <Button x:Name="executeSql" Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Grid.Row="3" Grid.Column="2" Content="Execute" Click="ExecuteSqlClick"  />
+        <TextBlock x:Name="labelPackageName" Grid.Row="3" Grid.Column="0"  VerticalAlignment="Center" TextAlignment="Center"  HorizontalAlignment="Center">Package name:</TextBlock>
+        <TextBox x:Name="packageNameBox" Style="{DynamicResource {x:Static vsshell:VsResourceKeys.TextBoxStyleKey}}" Grid.Row="3" Grid.Column="1" VerticalContentAlignment="Center" Text=""></TextBox>
+        <Button x:Name="infoButton" Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Grid.Row="3" Grid.Column="2" Content="Info" Click="InfoClick"  />
 
-        <Button Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Grid.Row="4" Grid.ColumnSpan="2" Content="Get data" Click="GetDataClick" x:Name="getData"/>
-        <Button Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Grid.Row="4" Grid.Column="2" Content="Settings" Click="SettingsToogleClick" x:Name="settings" Padding="5,0,5,0" />
+        <TextBlock x:Name="labelSql" Grid.Row="4" Grid.Column="0"  VerticalAlignment="Center" TextAlignment="Center"  HorizontalAlignment="Center">Custom sql:</TextBlock>
+        <TextBox x:Name="sqlBox" Style="{DynamicResource {x:Static vsshell:VsResourceKeys.TextBoxStyleKey}}" Grid.Row="4" Grid.Column="1" VerticalContentAlignment="Center" Text="" ></TextBox>
+        <Button x:Name="executeSql" Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Grid.Row="4" Grid.Column="2" Content="Execute" Click="ExecuteSqlClick"  />
 
-        <ComboBox Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ComboBoxStyleKey}}" SelectionChanged="TableComboBoxSelectionChanged"  Grid.Row="5" VerticalContentAlignment="Center" Grid.ColumnSpan="3" x:Name="TableComboBox">
+        <Button Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Grid.Row="5" Grid.ColumnSpan="2" Content="Get data" Click="GetDataClick" x:Name="getData"/>
+        <Button Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Grid.Row="5" Grid.Column="2" Content="Settings" Click="SettingsToogleClick" x:Name="settings" Padding="5,0,5,0" />
+
+        <ComboBox Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ComboBoxStyleKey}}" SelectionChanged="TableComboBoxSelectionChanged" Grid.Row="6" VerticalContentAlignment="Center" Grid.ColumnSpan="3" x:Name="TableComboBox">
             <ComboBox.ItemContainerStyle>
                 <Style TargetType="ComboBoxItem">
                     <Setter Property="Height" Value="30" />
@@ -57,7 +62,7 @@
             </ComboBox.ItemContainerStyle>
         </ComboBox>
 
-        <DataGrid Background="{DynamicResource {x:Static vsshell:VsBrushes.WindowKey}}" BorderBrush="DimGray"  HorizontalGridLinesBrush="DimGray" VerticalGridLinesBrush="DimGray" Grid.Row="6" Grid.ColumnSpan="3" x:Name="DatabaseGrid" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible" AutoGenerateColumns="True" HeadersVisibility="Column" CanUserDeleteRows="False" CanUserAddRows="False"  >
+        <DataGrid Background="{DynamicResource {x:Static vsshell:VsBrushes.WindowKey}}" BorderBrush="DimGray"  HorizontalGridLinesBrush="DimGray" VerticalGridLinesBrush="DimGray" Grid.Row="7" Grid.ColumnSpan="3" x:Name="DatabaseGrid" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible" AutoGenerateColumns="True" HeadersVisibility="Column" CanUserDeleteRows="False" CanUserAddRows="False"  >
             <DataGrid.CellStyle>
                 <Style TargetType="{x:Type DataGridCell}">
                     <Setter Property="Background" Value="{DynamicResource {x:Static vsshell:VsBrushes.WindowKey}}" />
