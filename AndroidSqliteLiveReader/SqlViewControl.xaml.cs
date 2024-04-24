@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -44,8 +45,12 @@ namespace AndroidSqliteLiveReader
             if (Devices.Count != 0)
                 DevicesComboBox.SelectedIndex = 0;
 
-            var sdk = Settings.GetSetting(SettingsName, "adbPath");
-            var db = Settings.GetSetting(SettingsName, "dbPath");
+            string adbPath = Settings.GetSetting(SettingsName, "adbPath");
+            if (!string.IsNullOrEmpty(adbPath))
+                AdbPathBox.Text = adbPath;
+
+            string dbPath = Settings.GetSetting(SettingsName, "dbPath");
+            dbPathBox.Text = dbPath;
             var visibility = Settings.GetSetting(SettingsName, "settingsVisible");
             bool.TryParse(visibility, out bool result);
             SettingsVisible = result;
@@ -54,10 +59,13 @@ namespace AndroidSqliteLiveReader
 
         private void SqlViewControlUnloaded(object sender, RoutedEventArgs e)
         {
+            CloseConnectionIfOpen();
             Settings.SaveSetting(SettingsName, "adbPath", AdbPathBox.Text);
             Settings.SaveSetting(SettingsName, "dbPath", dbPathBox.Text);
             Settings.SaveSetting(SettingsName, "settingsVisible", SettingsVisible.ToString());
-            CloseConnectionIfOpen();
+            TableComboBox.SelectedIndex = -1;
+            TableComboBox.ItemsSource = new string[] { };
+            DatabaseGrid.ItemsSource = new HashSet<string>();
             DeleteCreatedFiles();
         }
 
@@ -77,8 +85,10 @@ namespace AndroidSqliteLiveReader
                     continue;
 
                 string[] parameters = line.Split();
-                Device device = new Device();
-                device.Id = parameters[0];
+                Device device = new Device
+                {
+                    Id = parameters[0]
+                };
                 devices.Add(device);
             }
 
@@ -87,6 +97,16 @@ namespace AndroidSqliteLiveReader
                 string properties = Adb.AdbCommandWithResult($"-s {device.Id} shell getprop");
                 string[] propertieslines = SplitByLine(properties);
                 string avdNameLine = propertieslines.Where(l => l.Contains("ro.boot.qemu.avd_name")).FirstOrDefault();
+
+                if (string.IsNullOrEmpty(avdNameLine))
+                    avdNameLine = propertieslines.Where(l => l.Contains("ro.product.device")).FirstOrDefault();
+                if (string.IsNullOrEmpty(avdNameLine))
+                    avdNameLine = propertieslines.Where(l => l.Contains("ro.product.product.model")).FirstOrDefault();
+                if (string.IsNullOrEmpty(avdNameLine))
+                    avdNameLine = propertieslines.Where(l => l.Contains("ro.boot.hardware.sku")).FirstOrDefault();
+                if (string.IsNullOrEmpty(avdNameLine))
+                    avdNameLine = ":Unknown_Device";
+
                 string avdName = avdNameLine.Split(':')[1];
                 avdName = avdName.Trim().Replace("_", " ");
                 avdName = avdName.Substring(1, avdName.Length - 2);
@@ -100,7 +120,12 @@ namespace AndroidSqliteLiveReader
         private void CloseConnectionIfOpen()
         {
             if (Connection != null && Connection.State == ConnectionState.Open)
+            {
                 Connection.Close();
+                Connection.Dispose();
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
         }
 
         private void DeleteCreatedFiles()
@@ -190,17 +215,17 @@ namespace AndroidSqliteLiveReader
         private void CopyFileFromDeviceToApplicationData(string dbPath)
         {
             string fileName = dbPath.Substring(dbPath.LastIndexOf("/") + 1);
-            Adb.AdbCommand($"-s {SelectedDevice.Id} shell \"su 0 mkdir /storage/emulated/0/DbCopyPathTemp\"");// make Directory
-            Adb.AdbCommand($"-s {SelectedDevice.Id} shell \"su 0 cp -F {dbPath} /storage/emulated/0/DbCopyPathTemp/\""); //copy Db to readable folder
+            Adb.AdbCommand($"-s {SelectedDevice.Id} shell mkdir /storage/emulated/0/DbCopyPathTemp");// make Temp Directory
+            Adb.AdbCommand($"-s {SelectedDevice.Id} shell sqlite3 {dbPath} \"'.backup /storage/emulated/0/DbCopyPathTemp/{fileName}'\""); //copy Db to readable folder
             Adb.AdbCommand($"-s {SelectedDevice.Id} pull /storage/emulated/0/DbCopyPathTemp/{fileName} {Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}"); // copy db to disc
-            Adb.AdbCommand($"-s {SelectedDevice.Id} shell \"su 0 rm -r /storage/emulated/0/DbCopyPathTemp\"");// delete Directory
+            Adb.AdbCommand($"-s {SelectedDevice.Id} shell rm -r /storage/emulated/0/DbCopyPathTemp");// delete Temp Directory
         }
 
         private void OpenConnectionToDb(string fileName)
         {
             string currentPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), fileName);
             CretedFilesPaths.Add(currentPath);
-            Connection = new SqliteConnection($"data source={Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), fileName)}");
+            Connection = new SqliteConnection($"data source={Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), fileName)}; POOLING=FALSE;");
             Connection.Open();
         }
 
@@ -208,12 +233,16 @@ namespace AndroidSqliteLiveReader
         {
             List<string> reuslt = new List<string>();
 
-            SqliteCommand sqlCommand = new SqliteCommand("SELECT name FROM sqlite_master WHERE type = 'table'", Connection);
-            SqliteDataReader query = sqlCommand.ExecuteReader();
-
-            while (query.Read())
+            using (SqliteCommand sqlCommand = new SqliteCommand("SELECT name FROM sqlite_master WHERE type = 'table'", Connection))
             {
-                reuslt.Add(query.GetString(0));
+                using (SqliteDataReader query = sqlCommand.ExecuteReader())
+                {
+                    while (query.Read())
+                    {
+                        reuslt.Add(query.GetString(0));
+                    }
+                    query.Close();
+                }
             }
 
             return reuslt;
@@ -229,8 +258,10 @@ namespace AndroidSqliteLiveReader
                     return;
                 }
 
-                SqliteCommand sql = new SqliteCommand(sqlBox.Text, Connection);
-                LoadTableData(sql);
+                using (SqliteCommand sql = new SqliteCommand(sqlBox.Text, Connection))
+                {
+                    LoadTableData(sql);
+                }
             }
             catch (Exception ex)
             {
@@ -282,9 +313,10 @@ namespace AndroidSqliteLiveReader
             dbPathBox.Text = string.Empty;
             DevicesComboBox.SelectedIndex = -1;
             TableComboBox.SelectedIndex = -1;
-            DevicesComboBox.Items.Clear();
-            TableComboBox.Items.Clear();
-            DatabaseGrid.Items.Clear();
+            DevicesComboBox.ItemsSource = new string[] { };
+            TableComboBox.ItemsSource = new string[] { };
+            DatabaseGrid.ItemsSource = new HashSet<string>();
+            CloseConnectionIfOpen();
         }
 
         private void DbPathTextChanged(object sender, TextChangedEventArgs e)
@@ -292,8 +324,8 @@ namespace AndroidSqliteLiveReader
             if (TableComboBox == null)
                 return;
 
-            TableComboBox.Items.Clear();
-            DatabaseGrid.Items.Clear();
+            TableComboBox.ItemsSource = new string[] { };
+            DatabaseGrid.ItemsSource = new HashSet<string>();
             CloseConnectionIfOpen();
         }
 
@@ -302,8 +334,10 @@ namespace AndroidSqliteLiveReader
             if (((ComboBox)e.Source).SelectedIndex == -1)
                 return;
 
-            SqliteCommand sql = new SqliteCommand($"Select * from {((ComboBox)e.Source).SelectedItem}", Connection);
-            LoadTableData(sql);
+            using (SqliteCommand sql = new SqliteCommand($"Select * from {((ComboBox)e.Source).SelectedItem}", Connection))
+            {
+                LoadTableData(sql);
+            }
 
             LastSelectedTableIndex = ((ComboBox)e.Source).SelectedIndex;
         }
