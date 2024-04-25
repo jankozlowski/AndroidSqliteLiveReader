@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -334,12 +333,19 @@ namespace AndroidSqliteLiveReader
             if (((ComboBox)e.Source).SelectedIndex == -1)
                 return;
 
-            using (SqliteCommand sql = new SqliteCommand($"Select * from {((ComboBox)e.Source).SelectedItem}", Connection))
+            try
             {
-                LoadTableData(sql);
-            }
+                using (SqliteCommand sql = new SqliteCommand($"Select * from '{((ComboBox)e.Source).SelectedItem}'", Connection))
+                {
+                    LoadTableData(sql);
+                }
 
-            LastSelectedTableIndex = ((ComboBox)e.Source).SelectedIndex;
+                LastSelectedTableIndex = ((ComboBox)e.Source).SelectedIndex;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(string.Format(System.Globalization.CultureInfo.CurrentUICulture, ex.Message), "Error");
+            }
         }
 
 
