@@ -191,6 +191,12 @@ namespace AndroidSqliteLiveReader
                 return;
             }
 
+            if (SelectedDevice == null)
+            {
+                MessageBox.Show(string.Format(System.Globalization.CultureInfo.CurrentUICulture, "No device have been selected, select device from device ComboBox. If ComboBox is empty run emulator or connect real device."), "No device selected");
+                return;
+            }
+
             if (!bool.TryParse(Adb.AdbCommandWithResult($"-s {SelectedDevice.Id} shell test -f {dbPath} && echo 'true'"), out bool result))
             {
                 MessageBox.Show(string.Format(System.Globalization.CultureInfo.CurrentUICulture, "Db file not found, are you sure that provided db path is correct and you have selected correct device?"), "Db file not found");
