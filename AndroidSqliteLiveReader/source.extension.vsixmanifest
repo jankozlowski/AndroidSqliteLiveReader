@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="AndroidSqliteLiveReader.23f8b5cb-55d1-46a8-af41-4d3d258d9301" Version="1.01" Language="en-US" Publisher="BinaryAlchemist" />
+        <Identity Id="AndroidSqliteLiveReader.23f8b5cb-55d1-46a8-af41-4d3d258d9301" Version="1.0.1" Language="en-US" Publisher="BinaryAlchemist" />
         <DisplayName>AndroidSqliteLiveReader</DisplayName>
         <Description xml:space="preserve">Tool for quick reading sqlite database in android project within Visual Studio</Description>
         <MoreInfo>https://github.com/jankozlowski/AndroidSqliteLiveReader</MoreInfo>
