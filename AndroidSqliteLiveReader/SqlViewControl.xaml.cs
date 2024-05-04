@@ -1,4 +1,6 @@
 ﻿using AndroidSqliteLiveReader.Services;
+using EnvDTE;
+using EnvDTE80;
 using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
@@ -39,6 +41,7 @@ namespace AndroidSqliteLiveReader
 
         private void SqlViewControlLoaded(object sender, RoutedEventArgs e)
         {
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomainUnhandledException;
             Devices = GetConnectedDevices();
             DevicesComboBox.ItemsSource = Devices.Select(d => d.Name).ToList();
             if (Devices.Count != 0)
@@ -66,6 +69,42 @@ namespace AndroidSqliteLiveReader
             TableComboBox.ItemsSource = new string[] { };
             DatabaseGrid.ItemsSource = new HashSet<string>();
             DeleteCreatedFiles();
+            AppDomain.CurrentDomain.UnhandledException -= CurrentDomainUnhandledException;
+        }
+
+        private void CurrentDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            Exception exception = e.ExceptionObject as Exception;
+            if (exception != null)
+            {
+                MessageBox.Show(string.Format(System.Globalization.CultureInfo.CurrentUICulture, $"An unhandled error occurred: {exception.Message}"), "Error");
+                PromptToSaveUnsavedFiles();
+            }
+        }
+
+        public void PromptToSaveUnsavedFiles()
+        {
+            DTE2 dte = (DTE2)Microsoft.VisualStudio.Shell.Package.GetGlobalService(typeof(DTE));
+
+            Documents documents = dte.Documents;
+
+            foreach (Document doc in documents)
+            {
+                if (doc.Saved == false)
+                {
+                    string message = $"The document '{doc.Name}' has unsaved changes. Do you want to save it?";
+                    MessageBoxResult result = MessageBox.Show(string.Format(System.Globalization.CultureInfo.CurrentUICulture, message), "Save Changes", MessageBoxButton.YesNoCancel);
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        doc.Save();
+                    }
+                    else if (result == MessageBoxResult.Cancel)
+                    {
+                        return;
+                    }
+                }
+            }
         }
 
         private List<Device> GetConnectedDevices()
