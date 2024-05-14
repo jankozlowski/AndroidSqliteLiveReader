@@ -2,6 +2,7 @@
 using EnvDTE;
 using EnvDTE80;
 using Microsoft.Data.Sqlite;
+using Sentry;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -30,6 +31,13 @@ namespace AndroidSqliteLiveReader
         public SqlViewControl()
         {
             InitializeComponent();
+
+            SentrySdk.Init(o =>
+            {
+                o.Dsn = "https://9037f29828f7f67276933c28de14223b@o4507253822259200.ingest.de.sentry.io/4507253828157520";
+                o.Debug = false;
+            });
+
             Adb = new Adb();
             Settings = new Settings();
             CretedFilesPaths = new HashSet<string>();
@@ -79,6 +87,7 @@ namespace AndroidSqliteLiveReader
             {
                 MessageBox.Show(string.Format(System.Globalization.CultureInfo.CurrentUICulture, $"An unhandled error occurred: {exception.Message}"), "Error");
                 PromptToSaveUnsavedFiles();
+                SentrySdk.CaptureException(exception);
             }
         }
 
