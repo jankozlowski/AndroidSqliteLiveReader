@@ -3,10 +3,10 @@
 Tool for quick reading sqlite database in android project within Visual Studio. Useful for testing and quick debugging android native apps, xamarin forms and Maui android apps using sqlite database.
 
 This extension works as follows:
-- user selects running device and path where database is located
-- clicking get data copies database from the device to user ApplicationData, with use of adb
-- user can view data by tables or by executing custom sql statements
-- after closing extension window temporary database is deleted and extension remembers sdkPath, dbPath and if extension settings should be visible
+- user selects running device and path where database is located,
+- clicking get data copies database from the device to user ApplicationData, with use of adb,
+- user can view data by tables or by executing custom sql statements,
+- after closing extension window, extension remembers sdkPath, dbPath and if extension settings should be visible. After closing Visual Studio temporary database is deleted from hard drive.
 
 Because of permissions this software works only on emulators and with applications created in debug mode. User needs to have installed android SDK on the computer. Extension wast tested on basic Visual Studio themes.
 
