@@ -45,6 +45,10 @@ namespace AndroidSqliteLiveReader
             Adb.AdbPath = AdbPathBox.Text;
             Loaded += SqlViewControlLoaded;
             Unloaded += SqlViewControlUnloaded;
+
+            DTE2 dte = (DTE2)Microsoft.VisualStudio.Shell.Package.GetGlobalService(typeof(DTE));
+            DTEEvents dteEvents = dte.Events.DTEEvents;
+            dteEvents.OnBeginShutdown += OnVisualStudioClosing;
         }
 
         private void SqlViewControlLoaded(object sender, RoutedEventArgs e)
@@ -52,7 +56,12 @@ namespace AndroidSqliteLiveReader
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainUnhandledException;
             Devices = GetConnectedDevices();
             DevicesComboBox.ItemsSource = Devices.Select(d => d.Name).ToList();
-            if (Devices.Count != 0)
+
+            if (SelectedDevice != null && Devices.FirstOrDefault(d => d.Name.Equals(SelectedDevice.Name)) != null)
+            {
+                DevicesComboBox.SelectedIndex = Devices.FindIndex(d => d.Name.Equals(SelectedDevice.Name));
+            }
+            else if (Devices.Count != 0)
                 DevicesComboBox.SelectedIndex = 0;
 
             string adbPath = Settings.GetSetting(SettingsName, "adbPath");
@@ -69,15 +78,16 @@ namespace AndroidSqliteLiveReader
 
         private void SqlViewControlUnloaded(object sender, RoutedEventArgs e)
         {
-            CloseConnectionIfOpen();
             Settings.SaveSetting(SettingsName, "adbPath", AdbPathBox.Text);
             Settings.SaveSetting(SettingsName, "dbPath", dbPathBox.Text);
             Settings.SaveSetting(SettingsName, "settingsVisible", SettingsVisible.ToString());
-            TableComboBox.SelectedIndex = -1;
-            TableComboBox.ItemsSource = new string[] { };
-            DatabaseGrid.ItemsSource = new HashSet<string>();
-            DeleteCreatedFiles();
             AppDomain.CurrentDomain.UnhandledException -= CurrentDomainUnhandledException;
+        }
+
+        private void OnVisualStudioClosing()
+        {
+            CloseConnectionIfOpen();
+            DeleteCreatedFiles();
         }
 
         private void CurrentDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
@@ -331,6 +341,12 @@ namespace AndroidSqliteLiveReader
                 sqlDataReader.Close();
             }
             DatabaseGrid.ItemsSource = dataTable.DefaultView;
+
+            foreach (var column in DatabaseGrid.Columns)
+            {
+                column.CanUserResize = true;
+              //  column.Width = new DataGridLength(1, DataGridLengthUnitType.Star);
+            }
         }
 
         private void SettingsToogleClick(object sender, RoutedEventArgs e)
