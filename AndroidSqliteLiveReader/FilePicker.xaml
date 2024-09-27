@@ -2,6 +2,7 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vsshell="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0"
+        xmlns:fa="http://schemas.fontawesome.io/icons/"
         x:Class="AndroidSqliteLiveReader.FilePicker"
         WindowStartupLocation="CenterScreen"
         Title="File Picker" 
@@ -26,5 +27,6 @@
             <Button Style="{DynamicResource {x:Static vsshell:VsResourceKeys.ButtonStyleKey}}" Content="Cancel" Width="100" Height="25"  VerticalAlignment="Center" Click="CancelClicked"/>
             <Viewbox Width="25"></Viewbox>
         </StackPanel>
+        <fa:ImageAwesome Grid.Column="1" x:Name="loading" Icon="Refresh" Spin="True" Foreground="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}" Height="48" Width="48" />
     </Grid>
 </Window>

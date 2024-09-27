@@ -151,6 +151,8 @@ namespace AndroidSqliteLiveReader
 
             foreach (Device device in devices)
             {
+                Adb.AdbCommand($"-s {device.Id} root");
+
                 string properties = Adb.AdbCommandWithResult($"-s {device.Id} shell getprop");
                 string[] propertieslines = SplitByLine(properties);
                 string avdNameLine = propertieslines.Where(l => l.Contains("ro.boot.qemu.avd_name")).FirstOrDefault();
@@ -345,7 +347,7 @@ namespace AndroidSqliteLiveReader
             foreach (var column in DatabaseGrid.Columns)
             {
                 column.CanUserResize = true;
-              //  column.Width = new DataGridLength(1, DataGridLengthUnitType.Star);
+                //  column.Width = new DataGridLength(1, DataGridLengthUnitType.Star);
             }
         }
 

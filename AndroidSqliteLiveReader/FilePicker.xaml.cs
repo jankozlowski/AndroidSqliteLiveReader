@@ -3,10 +3,12 @@ using Microsoft.VisualStudio.Shell;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+
 namespace AndroidSqliteLiveReader
 {
     public partial class FilePicker : Window
@@ -24,42 +26,50 @@ namespace AndroidSqliteLiveReader
             Initialize();
         }
 
-        private void Initialize()
+        private async Task Initialize()
         {
-            Adb.AdbCommand($"root -s {DeviceId}");
-
             TreeViewItem rootNode = new TreeViewItem
             {
                 Header = "/",
                 Tag = "/"
             };
-            LoadNodes(rootNode);
+            await LoadNodesAsync(rootNode);
 
             rootNode.IsExpanded = true;
             tree.Items.Add(rootNode);
         }
 
-        private void LoadNodes(TreeViewItem currentNode)
+        private async Task LoadNodesAsync(TreeViewItem currentNode)
         {
+            loading.Visibility = Visibility.Visible;
             string directorys = Adb.AdbCommandWithResult($"-s {DeviceId} shell ls {currentNode.Tag} -F -A");
-
-            List<SingleNode> singleNodes = directorys.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries).Select(l => new SingleNode() { Name = l, Path = l }).ToList();
-            List<SingleNode> folderNodes = singleNodes.Where(n => n.Name.EndsWith("/")).ToList();
-            List<SingleNode> symbolicNodes = singleNodes.Where(n => n.Name.EndsWith("@")).ToList();
-
-            CheckSymbolicLinks(symbolicNodes);
-
-            List<SingleNode> onlyFolders = folderNodes.Concat(symbolicNodes.Where(s => !s.IsFile)).OrderBy(s => s.Name).ToList();
-            List<SingleNode> onlyFiles = singleNodes.Except(onlyFolders).OrderBy(s => s.Name).ToList();
-            onlyFiles.ForEach(l => { l.IsFile = true; FormatFileNode(l); });
-            singleNodes = onlyFolders.Concat(onlyFiles).ToList();
-
             currentNode.Items.Clear();
-
-            foreach (SingleNode node in singleNodes)
+            await Task.Run(() =>
             {
-                AddNewNode(currentNode, node);
-            }
+                List<SingleNode> singleNodes = directorys.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries).Select(l => new SingleNode() { Name = l, Path = l }).ToList();
+                List<SingleNode> folderNodes = singleNodes.Where(n => n.Name.EndsWith("/")).ToList();
+                List<SingleNode> symbolicNodes = singleNodes.Where(n => n.Name.EndsWith("@")).ToList();
+
+                CheckSymbolicLinks(symbolicNodes);
+
+                List<SingleNode> onlyFolders = folderNodes.Concat(symbolicNodes.Where(s => !s.IsFile)).OrderBy(s => s.Name).ToList();
+                List<SingleNode> onlyFiles = singleNodes.Except(onlyFolders).OrderBy(s => s.Name).ToList();
+                onlyFiles.ForEach(l => { l.IsFile = true; FormatFileNode(l); });
+                singleNodes = onlyFolders.Concat(onlyFiles).ToList();
+
+
+                foreach (SingleNode node in singleNodes)
+                {
+                    this.Dispatcher.Invoke(() =>
+                    {
+
+                        AddNewNode(currentNode, node);
+                    });
+                }
+            });
+
+
+            loading.Visibility = Visibility.Hidden;
         }
 
         private void CheckSymbolicLinks(List<SingleNode> symbolicNodes)
@@ -93,9 +103,9 @@ namespace AndroidSqliteLiveReader
             }
         }
 
-        private void CurrentNodeExpanded(object sender, RoutedEventArgs e)
+        private async void CurrentNodeExpanded(object sender, RoutedEventArgs e)
         {
-            LoadNodes((TreeViewItem)sender);
+            await LoadNodesAsync((TreeViewItem)sender);
             ((TreeViewItem)sender).Expanded -= CurrentNodeExpanded;
         }
 
@@ -116,7 +126,14 @@ namespace AndroidSqliteLiveReader
 
         private void SelectClicked(object sender, RoutedEventArgs e)
         {
-            PathResult = ((TreeViewItem)tree.SelectedItem).Tag.ToString();
+            if ((TreeViewItem)tree.SelectedItem == null)
+            {
+                PathResult = "/";
+            }
+            else
+            {
+                PathResult = ((TreeViewItem)tree.SelectedItem).Tag.ToString();
+            }
             DialogResult = true;
             Close();
         }
